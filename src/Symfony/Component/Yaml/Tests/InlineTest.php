@@ -143,6 +143,7 @@ class InlineTest extends \PHPUnit_Framework_TestCase
             array("'foo # bar'", 'foo # bar'),
             array("'#cfcfcf'", '#cfcfcf'),
             array('::form_base.html.twig', '::form_base.html.twig'),
+            array("\"\\ttest\\\\n\"", "\ttest\\n"),
 
             array('2007-10-30', mktime(0, 0, 0, 10, 30, 2007)),
             array('2007-10-30T02:59:43Z', gmmktime(2, 59, 43, 10, 30, 2007)),
@@ -210,6 +211,7 @@ class InlineTest extends \PHPUnit_Framework_TestCase
             array("'foo # bar'", 'foo # bar'),
             array("'#cfcfcf'", '#cfcfcf'),
             array('::form_base.html.twig', '::form_base.html.twig'),
+            array("\"\\ttest\\\\n\"", "\ttest\\n"),
 
             array('2007-10-30', mktime(0, 0, 0, 10, 30, 2007)),
             array('2007-10-30T02:59:43Z', gmmktime(2, 59, 43, 10, 30, 2007)),
@@ -283,6 +285,7 @@ class InlineTest extends \PHPUnit_Framework_TestCase
             array("'foo#bar'", 'foo#bar'),
             array("'foo # bar'", 'foo # bar'),
             array("'#cfcfcf'", '#cfcfcf'),
+            array("\"\\ttest\\\\n\"", "\ttest\\n"),
 
             array("'a \"string\" with ''quoted strings inside'''", 'a "string" with \'quoted strings inside\''),
 
