@@ -14,6 +14,7 @@ namespace Symfony\Bundle\FrameworkBundle\DependencyInjection;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\DefinitionDecorator;
+use Symfony\Component\DependencyInjection\Exception\LogicException;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\Config\Resource\FileResource;
@@ -56,27 +57,6 @@ class FrameworkExtension extends Extension
         // Property access is used by both the Form and the Validator component
         $loader->load('property_access.xml');
 
-        $loader->load('debug_prod.xml');
-
-        if ($container->getParameter('kernel.debug')) {
-            $loader->load('debug.xml');
-
-            $definition = $container->findDefinition('debug.debug_handlers_listener');
-            $definition->replaceArgument(0, array(new Reference('http_kernel', ContainerInterface::NULL_ON_INVALID_REFERENCE), 'terminateWithException'));
-
-            $definition = $container->findDefinition('http_kernel');
-            $definition->replaceArgument(2, new Reference('debug.controller_resolver'));
-
-            // replace the regular event_dispatcher service with the debug one
-            $definition = $container->findDefinition('event_dispatcher');
-            $definition->setPublic(false);
-            $container->setDefinition('debug.event_dispatcher.parent', $definition);
-            $container->setAlias('event_dispatcher', 'debug.event_dispatcher');
-        } else {
-            $definition = $container->findDefinition('debug.debug_handlers_listener');
-            $definition->replaceArgument(2, E_COMPILE_ERROR | E_PARSE | E_ERROR | E_CORE_ERROR);
-        }
-
         $configuration = $this->getConfiguration($configs, $container);
         $config = $this->processConfiguration($configuration, $configs);
 
@@ -109,6 +89,10 @@ class FrameworkExtension extends Extension
             $this->registerFormConfiguration($config, $container, $loader);
             $config['validation']['enabled'] = true;
 
+            if (!class_exists('Symfony\Component\Validator\Validator')) {
+                throw new LogicException('The Validator component is required to use the Form component.');
+            }
+
             if ($this->isConfigEnabled($container, $config['form']['csrf_protection'])) {
                 $config['csrf_protection']['enabled'] = true;
             }
@@ -139,8 +123,32 @@ class FrameworkExtension extends Extension
             $loader->load('serializer.xml');
         }
 
+        $loader->load('debug_prod.xml');
+        $definition = $container->findDefinition('debug.debug_handlers_listener');
+
+        if ($container->hasParameter('templating.helper.code.file_link_format')) {
+            $definition->replaceArgument(5, '%templating.helper.code.file_link_format%');
+        }
+
+        if ($container->getParameter('kernel.debug')) {
+            $loader->load('debug.xml');
+
+            $definition = $container->findDefinition('http_kernel');
+            $definition->replaceArgument(2, new Reference('debug.controller_resolver'));
+
+            // replace the regular event_dispatcher service with the debug one
+            $definition = $container->findDefinition('event_dispatcher');
+            $definition->setPublic(false);
+            $container->setDefinition('debug.event_dispatcher.parent', $definition);
+            $container->setAlias('event_dispatcher', 'debug.event_dispatcher');
+        } else {
+            $definition->replaceArgument(2, E_COMPILE_ERROR | E_PARSE | E_ERROR | E_CORE_ERROR);
+        }
+
         $this->addClassesToCompile(array(
             'Symfony\\Component\\Config\\FileLocator',
+
+            'Symfony\\Component\\Debug\\ErrorHandler',
 
             'Symfony\\Component\\EventDispatcher\\Event',
             'Symfony\\Component\\EventDispatcher\\ContainerAwareEventDispatcher',
@@ -162,6 +170,14 @@ class FrameworkExtension extends Extension
             // Cannot be included because annotations will parse the big compiled class file
             // 'Symfony\\Bundle\\FrameworkBundle\\Controller\\Controller',
         ));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getConfiguration(array $config, ContainerBuilder $container)
+    {
+        return new Configuration($container->getParameter('kernel.debug'));
     }
 
     /**
@@ -484,19 +500,6 @@ class FrameworkExtension extends Extension
             $namedPackages,
         ));
 
-        // Apply request scope to assets helper if one or more packages are request-scoped
-        $requireRequestScope = array_reduce(
-            $namedPackages,
-            function ($v, Reference $ref) use ($container) {
-                return $v || 'request' === $container->getDefinition($ref)->getScope();
-            },
-            'request' === $defaultPackage->getScope()
-        );
-
-        if ($requireRequestScope) {
-            $container->getDefinition('templating.helper.assets')->setScope('request');
-        }
-
         if (!empty($config['loaders'])) {
             $loaders = array_map(function ($loader) { return new Reference($loader); }, $config['loaders']);
 
@@ -634,6 +637,8 @@ class FrameworkExtension extends Extension
             $config['fallback'] = array($config['fallback']);
         }
         $translator->addMethodCall('setFallbackLocales', array($config['fallback']));
+
+        $container->setParameter('translator.logging', $config['logging']);
 
         // Discover translation directories
         $dirs = array();

@@ -39,16 +39,16 @@ abstract class FrameworkExtensionTest extends TestCase
         $container = $this->createContainerFromFile('full');
 
         $def = $container->getDefinition('property_accessor');
-        $this->assertEquals(false, $def->getArgument(0));
-        $this->assertEquals(false, $def->getArgument(1));
+        $this->assertFalse($def->getArgument(0));
+        $this->assertFalse($def->getArgument(1));
     }
 
     public function testPropertyAccessWithOverriddenValues()
     {
         $container = $this->createContainerFromFile('property_accessor');
         $def = $container->getDefinition('property_accessor');
-        $this->assertEquals(true, $def->getArgument(0));
-        $this->assertEquals(true, $def->getArgument(1));
+        $this->assertTrue($def->getArgument(0));
+        $this->assertTrue($def->getArgument(1));
     }
 
     /**
@@ -185,8 +185,6 @@ abstract class FrameworkExtensionTest extends TestCase
         $container = $this->createContainerFromFile('full');
 
         $this->assertTrue($container->hasDefinition('templating.name_parser'), '->registerTemplatingConfiguration() loads templating.xml');
-
-        $this->assertEquals('request', $container->getDefinition('templating.helper.assets')->getScope(), '->registerTemplatingConfiguration() sets request scope on assets helper if one or more packages are request-scoped');
 
         // default package should have one HTTP base URL and path package SSL URL
         $this->assertTrue($container->hasDefinition('templating.asset.default_package.http'));
@@ -499,6 +497,25 @@ abstract class FrameworkExtensionTest extends TestCase
 
         $this->assertTrue($container->getParameter('form.type_extension.csrf.enabled'));
         $this->assertEquals('_custom_form', $container->getParameter('form.type_extension.csrf.field_name'));
+    }
+
+    public function testStopwatchEnabledWithDebugModeEnabled()
+    {
+        $container = $this->createContainerFromFile('default_config', array(
+            'kernel.container_class' => 'foo',
+            'kernel.debug' => true,
+        ));
+
+        $this->assertTrue($container->has('debug.stopwatch'));
+    }
+
+    public function testStopwatchEnabledWithDebugModeDisabled()
+    {
+        $container = $this->createContainerFromFile('default_config', array(
+            'kernel.container_class' => 'foo',
+        ));
+
+        $this->assertTrue($container->has('debug.stopwatch'));
     }
 
     protected function createContainer(array $data = array())

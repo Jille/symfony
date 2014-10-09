@@ -147,7 +147,7 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
      */
     public function testProcessPipes($code, $size)
     {
-        $expected = str_repeat(str_repeat('*', 1024), $size) . '!';
+        $expected = str_repeat(str_repeat('*', 1024), $size).'!';
         $expectedLength = (1024 * $size) + 1;
 
         $p = $this->getProcess(sprintf('php -r %s', escapeshellarg($code)));
@@ -163,7 +163,7 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
      */
     public function testSetStreamAsInput($code, $size)
     {
-        $expected = str_repeat(str_repeat('*', 1024), $size) . '!';
+        $expected = str_repeat(str_repeat('*', 1024), $size).'!';
         $expectedLength = (1024 * $size) + 1;
 
         $stream = fopen('php://temporary', 'w+');
@@ -238,7 +238,7 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
     {
         if (defined('PHP_WINDOWS_VERSION_BUILD')) {
             return array(
-                array("2 \r\n2\r\n", '&&', '2')
+                array("2 \r\n2\r\n", '&&', '2'),
             );
         }
 
@@ -448,7 +448,7 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException Symfony\Component\Process\Exception\ProcessFailedException
+     * @expectedException \Symfony\Component\Process\Exception\ProcessFailedException
      */
     public function testMustRunThrowsException()
     {
@@ -669,7 +669,7 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
 
     public function testPhpDeadlock()
     {
-        $this->markTestSkipped('Can course PHP to hang');
+        $this->markTestSkipped('Can cause PHP to hang');
 
         // Sleep doesn't work as it will allow the process to handle signals and close
         // file handles from the other end.
@@ -689,7 +689,6 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
             $process->run();
             $this->fail('A RuntimeException should have been raised');
         } catch (RuntimeException $e) {
-
         }
         $duration = microtime(true) - $start;
 
@@ -733,7 +732,6 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
             }
             $this->fail('A RuntimeException should have been raised');
         } catch (RuntimeException $e) {
-
         }
         $duration = microtime(true) - $start;
 
@@ -789,7 +787,6 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
             $process->run();
             $this->fail('An exception should have been raised.');
         } catch (\Exception $e) {
-
         }
         $process->start();
         usleep(1000);
@@ -821,12 +818,12 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
     {
         $this->verifyPosixIsEnabled();
 
-        $process = $this->getProcess('exec php -f ' . __DIR__ . '/SignalListener.php');
+        $process = $this->getProcess('exec php -f '.__DIR__.'/SignalListener.php');
         $process->start();
         usleep(500000);
         $process->signal(SIGUSR1);
 
-        while ($process->isRunning() && false === strpos($process->getoutput(), 'Caught SIGUSR1')) {
+        while ($process->isRunning() && false === strpos($process->getOutput(), 'Caught SIGUSR1')) {
             usleep(10000);
         }
 
@@ -1011,20 +1008,20 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider provideStartMethods
      */
-    public function testStartWithACallbackAndDisabledOutput($startMethod)
+    public function testStartWithACallbackAndDisabledOutput($startMethod, $exception, $exceptionMessage)
     {
         $p = $this->getProcess('php -r "usleep(500000);"');
         $p->disableOutput();
-        $this->setExpectedException('Symfony\Component\Process\Exception\LogicException', 'Output has been disabled, enable it to allow the use of a callback.');
+        $this->setExpectedException($exception, $exceptionMessage);
         call_user_func(array($p, $startMethod), function () {});
     }
 
     public function provideStartMethods()
     {
         return array(
-            array('start'),
-            array('run'),
-            array('mustRun'),
+            array('start', 'Symfony\Component\Process\Exception\LogicException', 'Output has been disabled, enable it to allow the use of a callback.'),
+            array('run', 'Symfony\Component\Process\Exception\LogicException', 'Output has been disabled, enable it to allow the use of a callback.'),
+            array('mustRun', 'Symfony\Component\Process\Exception\LogicException', 'Output has been disabled, enable it to allow the use of a callback.'),
         );
     }
 
@@ -1096,7 +1093,7 @@ abstract class AbstractProcessTest extends \PHPUnit_Framework_TestCase
             array('Env'),
             array('Stdin'),
             array('Input'),
-            array('Options')
+            array('Options'),
         );
 
         return $defaults;
